@@ -1,0 +1,13 @@
+const api = 'http://localhost:5000/api';
+const login = await fetch(`${api}/auth/login`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ email: 'player@playhub.in', password: 'Player@123' }) }).then(response => response.json());
+const venues = await fetch(`${api}/venues`).then(response => response.json());
+const date = new Date(Date.now() + 2 * 86400000).toISOString().slice(0, 10);
+const slots = await fetch(`${api}/venues/${venues.venues[0]._id}/slots?date=${date}`).then(response => response.json());
+if (!slots.slots.length) throw new Error('No slot available for race test');
+const requests = Array.from({ length: 20 }, () => fetch(`${api}/bookings/hold`, { method: 'POST', headers: { 'content-type': 'application/json', authorization: `Bearer ${login.token}` }, body: JSON.stringify({ slotId: slots.slots[0]._id }) }));
+const responses = await Promise.all(requests);
+const successes = responses.filter(response => response.status === 201);
+if (successes.length !== 1) throw new Error(`Expected exactly one successful hold, received ${successes.length}`);
+const held = await successes[0].json();
+await fetch(`${api}/bookings/${held.booking._id}/payment-failed`, { method: 'POST', headers: { 'content-type': 'application/json', authorization: `Bearer ${login.token}` }, body: '{}' });
+console.log(`Race test passed: 1 of ${responses.length} concurrent requests acquired the slot.`);
