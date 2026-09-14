@@ -1,2 +1,26 @@
-import { useState } from 'react'; import { useAuth } from '../state/AuthContext.jsx';
-export default function AuthModal(){const {authOpen,setAuthOpen,authenticate}=useAuth();const [mode,setMode]=useState('login');const [values,setValues]=useState({name:'',email:'',phone:'',password:'',role:'customer'});const [error,setError]=useState('');const [busy,setBusy]=useState(false);if(!authOpen)return null;const submit=async e=>{e.preventDefault();setError('');setBusy(true);try{await authenticate(mode,values)}catch(e){setError(e.message)}finally{setBusy(false)}};return <div className="modal open"><div className="modal-backdrop" onClick={()=>setAuthOpen(false)}/><div className="modal-panel"><button className="modal-close" onClick={()=>setAuthOpen(false)}>×</button><h2>{mode==='login'?'Welcome back':'Create your account'}</h2><p className="sub">{mode==='login'?'Log in to manage your games.':'Choose how you want to use PlayHub.'}</p><form className="stack-form" onSubmit={submit}>{mode==='register'&&<><input required placeholder="Full name" value={values.name} onChange={e=>setValues({...values,name:e.target.value})}/><input placeholder="Mobile number" value={values.phone} onChange={e=>setValues({...values,phone:e.target.value})}/><div className="role-choice"><button type="button" className={values.role==='customer'?'selected':''} onClick={()=>setValues({...values,role:'customer'})}>I want to play</button><button type="button" className={values.role==='owner'?'selected':''} onClick={()=>setValues({...values,role:'owner'})}>I own a venue</button></div></>}<input required type="email" placeholder="Email address" value={values.email} onChange={e=>setValues({...values,email:e.target.value})}/><input required minLength="8" type="password" placeholder="Password (8+ characters)" value={values.password} onChange={e=>setValues({...values,password:e.target.value})}/>{error&&<p className="form-error">{error}</p>}<button className="primary wide" disabled={busy}>{busy?'Please wait…':mode==='login'?'Log in →':'Create account →'}</button></form><button className="switch-auth" onClick={()=>{setMode(mode==='login'?'register':'login');setError('')}}>{mode==='login'?"New here? Create an account":"Already registered? Log in"}</button></div></div>}
+import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../state/AuthContext.jsx';
+
+export default function AuthModal() {
+  const { authOpen, setAuthOpen, authMode, setAuthMode, authenticate } = useAuth();
+  const navigate = useNavigate();
+  const [values, setValues] = useState({ name: '', email: '', phone: '', password: '' });
+  const [error, setError] = useState('');
+  const [busy, setBusy] = useState(false);
+
+  if (!authOpen) return null;
+
+  const submit = async event => {
+    event.preventDefault(); setError(''); setBusy(true);
+    try {
+      await authenticate(authMode, values);
+      navigate('/', { replace: true });
+    } catch (submitError) { setError(submitError.message); }
+    finally { setBusy(false); }
+  };
+
+  const switchMode = () => { setAuthMode(authMode === 'login' ? 'register' : 'login'); setError(''); };
+
+  return <div className="modal open"><div className="modal-backdrop" onClick={() => setAuthOpen(false)} /><div className="modal-panel"><button className="modal-close" onClick={() => setAuthOpen(false)}>×</button><h2>{authMode === 'login' ? 'Player login' : 'Create your player account'}</h2><p className="sub">{authMode === 'login' ? 'Log in to book courts and manage your games.' : 'Sign up as a player to find and book sports venues.'}</p><form className="stack-form" onSubmit={submit}>{authMode === 'register' && <><input required placeholder="Full name" value={values.name} onChange={event => setValues({ ...values, name: event.target.value })} /><input placeholder="Mobile number" value={values.phone} onChange={event => setValues({ ...values, phone: event.target.value })} /></>}<input required type="email" placeholder="Email address" value={values.email} onChange={event => setValues({ ...values, email: event.target.value })} /><input required minLength="8" type="password" placeholder="Password (8+ characters)" value={values.password} onChange={event => setValues({ ...values, password: event.target.value })} />{error && <p className="form-error">{error}</p>}<button className="primary wide" disabled={busy}>{busy ? 'Please wait…' : authMode === 'login' ? 'Player login →' : 'Create player account →'}</button></form><button className="switch-auth" onClick={switchMode}>{authMode === 'login' ? 'New player? Create an account' : 'Already registered? Log in'}</button></div></div>;
+}
